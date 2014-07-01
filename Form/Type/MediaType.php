@@ -10,14 +10,14 @@ namespace Oryzone\Bundle\MediaStorageBundle\Form\Type;
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code (Resources/meta/LICENSE).
  */
-
 use Symfony\Component\Form\AbstractType,
     Symfony\Component\Form\FormBuilderInterface,
-    Symfony\Component\OptionsResolver\OptionsResolverInterface;
+    Symfony\Component\OptionsResolver\OptionsResolverInterface,
+    Symfony\Component\Form\FormEvent,
+    Symfony\Component\Form\FormEvents;
 
 use Oryzone\MediaStorage\MediaStorageInterface,
-    Oryzone\Bundle\MediaStorageBundle\Form\Type\Builder\FormTypeBuilderFactoryInterface,
-    Oryzone\Bundle\MediaStorageBundle\Form\DataTransformer\ContextFixerDataTransformer;
+    Oryzone\Bundle\MediaStorageBundle\Form\Type\Builder\FormTypeBuilderFactoryInterface;
 
 class MediaType extends AbstractType
 {
@@ -66,7 +66,11 @@ class MediaType extends AbstractType
         $context = $this->mediaStorage->getContext($options['context']);
         $provider = $this->mediaStorage->getProvider($context->getProviderName());
 
-        $builder->appendNormTransformer(new ContextFixerDataTransformer($options['context']));
+        //avoid to use a specific form field to define the context (context should be defined by the developer and must
+        //not be changed by users)
+        $builder->addEventListener(FormEvents::POST_SUBMIT, function(FormEvent $e) use ($context){
+            $e->getData()->setContextName($context->getName());
+        });
 
         if($options['showName'])
             $builder->add('name', 'text', isset($options['name']) ? array('data' => $options['name']) : array());
